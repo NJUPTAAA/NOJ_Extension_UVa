@@ -1,9 +1,10 @@
 <?php
-namespace App\Babel\Extension\template;
+namespace App\Babel\Extension\uva;
 
 use App\Babel\Submit\Curl;
 use App\Models\SubmissionModel;
 use App\Models\JudgerModel;
+use App\Models\OJModel;
 use Requests;
 use Exception;
 use Log;
@@ -12,70 +13,63 @@ class Judger extends Curl
 {
 
     public $verdict=[
-        'Accepted'=>"Accepted",
-        "Presentation Error"=>"Presentation Error",
-        'Time Limit Exceeded'=>"Time Limit Exceed",
-        "Memory Limit Exceeded"=>"Memory Limit Exceed",
-        'Wrong Answer'=>"Wrong Answer",
-        'Runtime Error'=>"Runtime Error",
-        'Output Limit Exceeded'=>"Output Limit Exceeded",
-        'Compile Error'=>"Compile Error",
+        10=>'Submission Error',
+        15=>'Submission Error', // Can't be judged
+        // 20 In queue
+        30=>"Compile Error",
+        35=>"Compile Error", // Restricted function
+        40=>"Runtime Error",
+        45=>"Output Limit Exceeded",
+        50=>"Time Limit Exceed",
+        60=>"Memory Limit Exceed",
+        70=>"Wrong Answer",
+        80=>"Presentation Error",
+        90=>"Accepted",
     ];
-    private $model=[];
-    private $template=[];
+    private $list=[];
 
 
     public function __construct()
     {
-        $this->model["submissionModel"]=new SubmissionModel();
-        $this->model["judgerModel"]=new JudgerModel();
+        $this->submissionModel=new SubmissionModel();
+        $this->judgerModel=new JudgerModel();
+
+        $this->list = [];
+        $earliest = $this->submissionModel->getEarliestSubmission(OJModel::oid('uva'));
+        if (!$earliest) return;
+
+        $judgerDetail=$this->judgerModel->detail($earliest['jid']);
+        $this->handle=$judgerDetail['handle'];
+
+        $response=$this->grab_page("https://uhunt.onlinejudge.org/api/subs-user/".$judgerDetail['user_id']."/".($earliest['remote_id']-1), 'uva', [], $judgerDetail['handle']);
+        $result=json_decode($response, true);
+        foreach ($result['subs'] as $i) {
+            $this->list[$i[0]]=['time'=>$i[3], 'verdict'=>$i[2]];
+        }
     }
 
     public function judge($row)
     {
-        $sub=[];
-
-        if (!isset($this->poj[$row['remote_id']])) {
-            $judgerDetail=$this->model["judgerModel"]->detail($row['jid']);
-            $this->appendPOJStatus($judgerDetail['handle'], $row['remote_id']);
-            if (!isset($this->poj[$row['remote_id']])) {
+        if (array_key_exists($row['remote_id'], $this->list)) {
+            $sub=[];
+            if (!isset($this->verdict[$this->list[$row['remote_id']]['verdict']])) { // Sometimes verdict is 0 and i have no idea why
                 return;
             }
-        }
-
-        $status=$this->poj[$row['remote_id']];
-        $sub['verdict']=$this->verdict[$status['verdict']];
-
-        if ($sub['verdict']=='Compile Error') {
-            try {
-                $res=Requests::get('http://poj.org/showcompileinfo?solution_id='.$row['remote_id']);
-                preg_match('/<pre>([\s\S]*)<\/pre>/', $res->body, $match);
-                $sub['compile_info']=html_entity_decode($match[1], ENT_QUOTES);
-            } catch (Exception $e) {
+            $sub['verdict']=$this->verdict[$this->list[$row['remote_id']]['verdict']];
+            if ($sub['verdict']==='Compile Error') {
+                $response=$this->grab_page("https://uva.onlinejudge.org/index.php?option=com_onlinejudge&Itemid=9&page=show_compilationerror&submission=$row[remote_id]", 'uva', [], $this->handle);
+                if (preg_match('/<pre>([\s\S]*)<\/pre>/', $response, $match)) {
+                    $sub['compile_info']=trim($match[1]);
+                }
             }
-        }
+            $sub['score']=$sub['verdict']=="Accepted" ? 1 : 0;
+            $sub['remote_id']=$row['remote_id'];
+            $sub['time']=$this->list[$row['remote_id']]['time'];
 
-        $sub["score"]=$sub['verdict']=="Accepted" ? 1 : 0;
-        $sub['time']=$status['time'];
-        $sub['memory']=$status['memory'];
-        $sub['remote_id']=$row['remote_id'];
-
-        $this->model["submissionModel"]->updateSubmission($row['sid'], $sub);
-    }
-
-    private function appendPOJStatus($judger, $first=null)
-    {
-        if ($first!==null) {
-            $first++;
-        }
-        $res=Requests::get("http://poj.org/status?user_id={$judger}&top={$first}");
-        $rows=preg_match_all('/<tr align=center><td>(\d+)<\/td><td>.*?<\/td><td>.*?<\/td><td>.*?<font color=.*?>(.*?)<\/font>.*?<\/td><td>(\d*)K?<\/td><td>(\d*)(?:MS)?<\/td>/', $res->body, $matches);
-        for ($i=0; $i<$rows; $i++) {
-            $this->poj[$matches[1][$i]]=[
-                'verdict'=>$matches[2][$i],
-                'memory'=>$matches[3][$i] ? $matches[3][$i] : 0,
-                'time'=>$matches[4][$i] ? $matches[4][$i] : 0,
-            ];
+            // $ret[$row['sid']]=[
+            //     "verdict"=>$sub['verdict']
+            // ];
+            $this->submissionModel->updateSubmission($row['sid'], $sub);
         }
     }
 }

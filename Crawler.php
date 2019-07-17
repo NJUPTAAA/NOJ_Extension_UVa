@@ -1,5 +1,5 @@
 <?php
-namespace App\Babel\Extension\template;//The 'template' should be replaced by the real oj code.
+namespace App\Babel\Extension\uva;//The 'template' should be replaced by the real oj code.
 
 use App\Babel\Crawl\CrawlerBase;
 use App\Models\ProblemModel;
@@ -11,7 +11,7 @@ use Exception;
 class Crawler extends CrawlerBase
 {
     public $oid=null;
-    public $prefix="Template";//The 'Template' should be replaced by the real oj name.
+    public $prefix="UVa";
     private $con;
     private $imgi;
     /**
@@ -24,7 +24,7 @@ class Crawler extends CrawlerBase
         $action=isset($conf["action"])?$conf["action"]:'crawl_problem';
         $con=isset($conf["con"])?$conf["con"]:'all';
         $cached=isset($conf["cached"])?$conf["cached"]:false;
-        $this->oid=OJModel::oid('template');//The 'template' should be replaced by the real oj code.
+        $this->oid=OJModel::oid('uva');
 
         if(is_null($this->oid)) {
             throw new Exception("Online Judge Not Found");
@@ -42,135 +42,53 @@ class Crawler extends CrawlerBase
         // TODO
     }
 
-    private static function find($pattern, $subject)
-    {
-        if (preg_match($pattern, $subject, $matches)) {
-            return $matches[1];
-        }
-        return null;
-    }
-
-    private function getDOM($html, $start, $end)
-    {
-        if ($start===false || $end===false) {
-            throw new Exception("Missing keywords.");
-        }
-        return $this->cacheImage(HtmlDomParser::str_get_html(substr($html, $start, $end-$start), true, true, DEFAULT_TARGET_CHARSET, false));
-    }
-
-    private function getInnertext($html, $start, $end, $tag)
-    {
-        return $this->getDOM($html, $start, $end)->find($tag, 0)->innertext();
-    }
-
-    private function cacheImage($dom)
-    {
-        foreach ($dom->find('img') as $ele) {
-            $src=str_replace('\\', '/', $ele->src);
-            if (strpos($src, '://')!==false) {
-                $url=$src;
-            } elseif ($src[0]=='/') {
-                $url='http://poj.org'.$src;
-            } else {
-                $url='http://poj.org/'.$src;
-            }
-            $res=Requests::get($url, ['Referer' => 'http://poj.org']);
-            $ext=['image/jpeg'=>'.jpg', 'image/png'=>'.png', 'image/gif'=>'.gif', 'image/bmp'=>'.bmp'];
-            if (isset($res->headers['content-type'])) {
-                $cext=$ext[$res->headers['content-type']];
-            } else {
-                $pos=strpos($ele->src, '.');
-                if ($pos===false) {
-                    $cext='';
-                } else {
-                    $cext=substr($ele->src, $pos);
-                }
-            }
-            $fn=$this->con.'_'.($this->imgi++).$cext;
-            $dir=base_path("public/external/poj/img");
-            if (!file_exists($dir)) {
-                mkdir($dir, 0755, true);
-            }
-            file_put_contents(base_path("public/external/poj/img/$fn"), $res->body);
-            $ele->src='/external/poj/img/'.$fn;
-        }
-        return $dom;
-    }
-
     public function crawl($con)
     {
-        if ($con=='all') {
-            // TODO
-            return;
-        }
-        $this->con=$con;
-        $this->imgi=1;
         $problemModel=new ProblemModel();
-        $res=Requests::get("http://poj.org/problem?id={$con}&lang=zh-CN&change=true"); // I have no idea what does `change` refers to
-        if (strpos($res->body, 'Can not find problem')!==false) {
-            header('HTTP/1.1 404 Not Found');
-            die();
-        }
-        $this->pro['pcode']=$this->prefix.$con;
-        $this->pro['OJ']=$this->oid;
-        $this->pro['contest_id']=null;
-        $this->pro['index_id']=$con;
-        $this->pro['origin']="http://poj.org/problem?id={$con}&lang=zh-CN&change=true";
-        $this->pro['title']=self::find('/<div class="ptt" lang=".*?">([\s\S]*?)<\/div>/', $res->body);
-        $this->pro['time_limit']=self::find('/Time Limit:.*?(\d+)MS/', $res->body);
-        $this->pro['memory_limit']=self::find('/Memory Limit:.*?(\d+)K/', $res->body);
-        $this->pro['solved_count']=self::find('/Accepted:.*?(\d+)/', $res->body);
-        $this->pro['input_type']='standard input';
-        $this->pro['output_type']='standard output';
-        $descPattern='<p class="pst">Description</p>';
-        $inputPattern='<p class="pst">Input</p>';
-        $outputPattern='<p class="pst">Output</p>';
-        $sampleInputPattern='<p class="pst">Sample Input</p>';
-        $sampleOutputPattern='<p class="pst">Sample Output</p>';
-        $notePattern='<p class="pst">Hint</p>';
-        $sourcePattern='<p class="pst">Source</p>';
-        $endPattern='</td>';
+        if ($con=='all') {
+            $res=Requests::get("https://uhunt.onlinejudge.org/api/p");
+            $result=json_decode($res->body, true);
+            $info=[];
+            for ($i=0; $i<count($result); ++$i) {
+                $info[$result[$i][1]]=[$result[$i][0], $result[$i][2], $result[$i][3], $result[$i][19]];
+            }
+            ksort($info);
+            foreach ($info as $key=>$value) {
+                $this->pro['pcode']='UVA'.$key;
+                $this->pro['OJ']=$this->oid;
+                $this->pro['contest_id']=null;
+                $this->pro['index_id']=$value[0];
+                $this->pro['origin']="https://uva.onlinejudge.org/index.php?option=com_onlinejudge&Itemid=8&page=show_problem&problem=".$value[0];
+                $this->pro['title']=$value[1];
+                $this->pro['time_limit']=$value[3];
+                $this->pro['memory_limit']=131072; // Given in elder codes
+                $this->pro['solved_count']=$value[2];
+                $this->pro['input_type']='standard input';
+                $this->pro['output_type']='standard output';
+                $this->pro['description']="<a href=\"/external/gym/UVa{$key}.pdf\">[Attachment Link]</a>";
+                $this->pro['input']='';
+                $this->pro['output']='';
+                $this->pro['note']='';
+                $this->pro['sample']=[];
+                $this->pro['source']='Here';
+                $this->pro['file']=1;
 
-        $pos1=strpos($res->body, $descPattern)+strlen($descPattern);
-        $pos2=strpos($res->body, $inputPattern, $pos1);
-        $this->pro['description']=trim($this->getInnertext($res->body, $pos1, $pos2, 'div'));
-        $pos1=$pos2+strlen($inputPattern);
-        $pos2=strpos($res->body, $outputPattern, $pos1);
-        $this->pro['input']=trim($this->getInnertext($res->body, $pos1, $pos2, 'div'));
-        $pos1=$pos2+strlen($outputPattern);
-        $pos2=strpos($res->body, $sampleInputPattern, $pos1);
-        $this->pro['output']=trim($this->getInnertext($res->body, $pos1, $pos2, 'div'));
-        $pos1=$pos2+strlen($sampleInputPattern);
-        $pos2=strpos($res->body, $sampleOutputPattern, $pos1);
-        $sampleInput=$this->getInnertext($res->body, $pos1, $pos2, 'pre');
-        $pos1=$pos2+strlen($sampleOutputPattern);
-        $pos2=strpos($res->body, $notePattern, $pos1);
-        if ($hasNote=($pos2!==false)) {
-            $sampleOutput=$this->getInnertext($res->body, $pos1, $pos2, 'pre');
-            $pos1=$pos2+strlen($notePattern);
-        }
-        $pos2=strpos($res->body, $sourcePattern, $pos1);
-        $temp=$this->getDOM($res->body, $pos1, $pos2);
-        if ($hasNote) {
-            $this->pro['note']=trim($temp->find('div', 0)->innertext());
+                $problem=$problemModel->pid($this->pro['pcode']);
+
+                if ($problem) {
+                    $problemModel->clearTags($problem);
+                    $new_pid=$this->update_problem($this->oid);
+                } else {
+                    $new_pid=$this->insert_problem($this->oid);
+                }
+
+                // $problemModel->addTags($new_pid, $tag); // not present
+            }
+            $this->data=array_keys($info);
         } else {
-            $sampleOutput=$temp->find('pre', 0)->innertext();
-            $this->pro['note']=null;
+            $pf=substr($con, 0, strlen($con)-2);
+            $res=Requests::get("https://uva.onlinejudge.org/external/$pf/p$con.pdf");
+            file_put_contents(base_path("public/external/gym/UVa$con.pdf"), $res->body);
         }
-        $this->pro['sample']=[['sample_input'=>$sampleInput, 'sample_output'=>$sampleOutput]];
-        $pos1=$pos2+strlen($sourcePattern);
-        $pos2=strpos($res->body, $endPattern, $pos1);
-        $this->pro['source']=trim($this->getDOM($res->body, $pos1, $pos2)->find('div', 0)->find('a', 0)->innertext());
-
-        $problem=$problemModel->pid($this->pro['pcode']);
-
-        if ($problem) {
-            $problemModel->clearTags($problem);
-            $new_pid=$this->updateProblem($this->oid);
-        } else {
-            $new_pid=$this->insertProblem($this->oid);
-        }
-
-        // $problemModel->addTags($new_pid, $tag); // not present
     }
 }

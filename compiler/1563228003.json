@@ -1,0 +1,45 @@
+{
+    "modifications":[{
+        "code":"1",
+        "compability":"c",
+        "language":"c",
+        "icon":"devicon-c-plain",
+        "display":"ANSI C 5.3.0",
+        "method":"add"
+    },{
+        "code":"2",
+        "compability":"java",
+        "language":"java",
+        "icon":"devicon-java-plain",
+        "display":"JAVA 1.8.0",
+        "method":"add"
+    },{
+        "code":"3",
+        "compability":"c",
+        "language":"cpp",
+        "icon":"devicon-cplusplus-plain",
+        "display":"C++ 5.3.0",
+        "method":"add"
+    },{
+        "code":"4",
+        "compability":"pascal",
+        "language":"pascal",
+        "icon":"devicon-devicon-plain",
+        "display":"PASCAL 3.0.0",
+        "method":"add"
+    },{
+        "code":"5",
+        "compability":"c",
+        "language":"cpp",
+        "icon":"devicon-cplusplus-plain",
+        "display":"C++11 5.3.0",
+        "method":"add"
+    },{
+        "code":"6",
+        "compability":"python",
+        "language":"python",
+        "icon":"devicon-python-plain",
+        "display":"PYTH3 3.5.1",
+        "method":"add"
+    }]
+}

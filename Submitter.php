@@ -1,5 +1,5 @@
 <?php
-namespace App\Babel\Extension\template;
+namespace App\Babel\Extension\uva;
 
 use App\Babel\Submit\Curl;
 use App\Models\CompilerModel;
@@ -19,7 +19,7 @@ class Submitter extends Curl
         $this->sub=& $sub;
         $this->post_data=$all_data;
         $judger=new JudgerModel();
-        $this->oid=OJModel::oid('template');
+        $this->oid=OJModel::oid('uva');
         if(is_null($this->oid)) {
             throw new Exception("Online Judge Not Found");
         }
@@ -29,57 +29,35 @@ class Submitter extends Curl
 
     private function _login()
     {
-        $response=$this->grab_page([
-            "site"=>'http://poj.org',
-            "oj"=>'poj',
-            "handle"=>$this->selectedJudger["handle"]
-        ]);
-        if (strpos($response, 'Log Out')===false) {
-            $params=[
-                'user_id1' => $this->selectedJudger["handle"],
-                'password1' => $this->selectedJudger["password"],
-                'B1' => 'login',
+        $response=$this->grab_page("https://uva.onlinejudge.org/", 'uva', [], $this->selectedJudger['handle']);
+        if (strpos($response, 'Logout')===false) {
+            $post_data=[
+                'username' => $this->selectedJudger["handle"],
+                'passwd' => $this->selectedJudger["password"],
+                'remember' => 'yes',
             ];
-            $this->login([
-                "url"=>'http://poj.org/login',
-                "data"=>http_build_query($params),
-                "oj"=>'poj',
-                "ret"=>true,
-                "handle"=>$this->selectedJudger["handle"]
-            ]);
+            $inputs=preg_match_all('/<input type="\w*" name="(op2|lang|force_session|return|message|loginfrom|cbsecuritym3|\w[0-9a-z]{32})" value="(.*?)" \/>/', $response, $matches);
+            for ($i=0; $i<$inputs; ++$i) {
+                $post_data[$matches[1][$i]]=$matches[2][$i];
+            }
+            $this->post_data('https://uva.onlinejudge.org/index.php?option=com_comprofiler&task=login', $post_data, 'uva', false, false, false, false, [], $this->selectedJudger['handle']);
         }
     }
 
     private function _submit()
     {
         $params=[
-            'problem_id' => $this->post_data['iid'],
-            'language' => $this->post_data['lang'],
-            'source' => base64_encode($this->post_data["solution"]),
-            'encoded' => 1, // Optional, but sometimes base64 seems smaller than url encode
+            'problemid'=>$this->post_data['iid'],
+            'language'=>$this->post_data['lang'],
+            'code'=>$this->post_data['solution'],
         ];
 
-        $response=$this->post_data([
-            "site"=>"http://poj.org/submit",
-            "data"=>http_build_query($params),
-            "oj"=>"poj",
-            "ret"=>true,
-            "follow"=>false,
-            "returnHeader"=>true,
-            "postJson"=>false,
-            "extraHeaders"=>[],
-            "handle"=>$this->selectedJudger["handle"]
-        ]);
-
-        if (!preg_match('/Location: .*\/status/', $response, $match)) {
-            $this->sub['verdict']='Submission Error';
+        $response=$this->post_data("https://uva.onlinejudge.org/index.php?option=com_onlinejudge&Itemid=25&page=save_submission", $params, 'uva', true, false, true, false, [], $this->selectedJudger['handle']);
+        $this->sub['jid']=$this->selectedJudger["jid"];
+        if (preg_match('/Submission\+received\+with\+ID\+(\d+)/', $response, $match)) {
+            $this->sub['remote_id']=$match[1];
         } else {
-            $res=Requests::get('http://poj.org/status?problem_id='.$this->post_data['iid'].'&user_id='.urlencode($this->selectedJudger["handle"]));
-            if (!preg_match('/<tr align=center><td>(\d+)<\/td>/', $res->body, $match)) {
-                $this->sub['verdict']='Submission Error';
-            } else {
-                $this->sub['remote_id']=$match[1];
-            }
+            $this->sub['verdict']='Submission Error';
         }
     }
 
