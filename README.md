@@ -1,2 +1,2 @@
-# NOJ_Extensions_Template
-This is a template extension for NOJ Babel
+# NOJ_Extension_UVa
+UVa interface for NOJ
