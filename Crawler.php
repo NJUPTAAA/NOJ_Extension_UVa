@@ -52,6 +52,9 @@ class Crawler extends CrawlerBase
             file_put_contents(__DIR__ . '/problemset.problems', $res = $res->body);
         }
         $result = json_decode($res, true);
+        $this->updmsg = $incremental ? 'Updating' : 'Crawling';
+        $this->donemsg = $incremental ? 'Updated' : 'Crawled';
+        $failures = [];
         if ($con == 'all') {
             $info = [];
             for ($i = 0; $i < count($result); ++$i) {
@@ -62,23 +65,62 @@ class Crawler extends CrawlerBase
                 if ($incremental && !empty($this->problemModel->basic($this->problemModel->pid('UVa' . $key)))) {
                     continue;
                 }
-                $this->_crawl($key, $value);
+                if (!$this->_crawl($key, $value)) {
+                    array_push($failures, $key);
+                }
             }
         } else {
             for ($i = 0; $i < count($result); ++$i) {
                 if ($result[$i][1] == $con) {
-                    $this->_crawl($con, [$result[$i][0], $result[$i][2], $result[$i][3], $result[$i][19]]);
+                    if (!$this->_crawl($con, [$result[$i][0], $result[$i][2], $result[$i][3], $result[$i][19]])) {
+                        $failures = [$result[$i][1]];
+                    }
                     break;
                 }
             }
         }
+
+        if ($failures) {
+            $resultmsg = "\n  <bg=red;fg=white> Failed problems </> : ";
+            $len = 22;
+            $last = 'UVa' . $failures[count($failures) - 1];
+            foreach ($failures as $id) {
+                $id = 'UVa' . $id;
+                if ($id != $last) {
+                    $id = $id . ', ';
+                }
+                if ($len + strlen($id) >= 120) {
+                    $resultmsg .= "\n                      ";
+                    $len = 22;
+                }
+                $resultmsg .= $id;
+                $len += strlen($id);
+            }
+        } else {
+            $resultmsg = "\n  <fg=green>{$this->donemsg} successful.</>";
+        }
+        $this->line($resultmsg);
     }
 
     private function _crawl($con, $info)
     {
-        $pf = substr($con, 0, strlen($con) - 2);
-        $res = Requests::get("https://uva.onlinejudge.org/external/$pf/p$con.pdf");
-        file_put_contents(base_path("public/external/gym/UVa$con.pdf"), $res->body);
+        $updmsg = $this->updmsg;
+        $donemsg = $this->donemsg;
+        $this->line("<fg=yellow>{$updmsg}:   </>UVa$con");
+
+        try {
+            $pf = substr($con, 0, strlen($con) - 2);
+            $res = Requests::get("https://uva.onlinejudge.org/external/$pf/p$con.pdf");
+            if (!$res->success) {
+                $this->line("\n  <bg=red;fg=white> Exception </> : <fg=yellow>Problem's PDF not found.</>\n");
+                return;
+            }
+            file_put_contents(base_path("public/external/gym/UVa$con.pdf"), $res->body);
+        }
+        catch (Exception $e) {
+            $this->line("\n  <bg=red;fg=white> Exception </> : <fg=yellow>Failed while downloading PDF.</>\n");
+            return;
+        }
 
         $this->pro['pcode'] = 'UVA' . $con;
         $this->pro['OJ'] = $this->oid;
@@ -109,5 +151,8 @@ class Crawler extends CrawlerBase
         }
 
         // $this->problemModel->addTags($new_pid, $tag); // not present
+
+        $this->line("<fg=green>$donemsg:    </>UVa$con");
+        return true;
     }
 }
