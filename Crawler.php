@@ -59,6 +59,9 @@ class Crawler extends CrawlerBase
             }
             ksort($info);
             foreach ($info as $key => $value) {
+                if ($incremental && !empty($this->problemModel->basic($this->problemModel->pid('UVa' . $key)))) {
+                    continue;
+                }
                 $this->_crawl($key, $value);
             }
         } else {
@@ -73,6 +76,10 @@ class Crawler extends CrawlerBase
 
     private function _crawl($con, $info)
     {
+        $pf = substr($con, 0, strlen($con) - 2);
+        $res = Requests::get("https://uva.onlinejudge.org/external/$pf/p$con.pdf");
+        file_put_contents(base_path("public/external/gym/UVa$con.pdf"), $res->body);
+
         $this->pro['pcode'] = 'UVA' . $con;
         $this->pro['OJ'] = $this->oid;
         $this->pro['contest_id'] = null;
@@ -102,9 +109,5 @@ class Crawler extends CrawlerBase
         }
 
         // $this->problemModel->addTags($new_pid, $tag); // not present
-
-        $pf = substr($con, 0, strlen($con) - 2);
-        $res = Requests::get("https://uva.onlinejudge.org/external/$pf/p$con.pdf");
-        file_put_contents(base_path("public/external/gym/UVa$con.pdf"), $res->body);
     }
 }
