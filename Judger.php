@@ -62,7 +62,7 @@ class Judger extends Curl
             $sub['verdict'] = $this->verdict[$this->list[$row['remote_id']]['verdict']];
             if ($sub['verdict'] === 'Compile Error') {
                 $response = $this->grab_page([
-                    'site' => "https://uva.onlinejudge.org/index.php?option=com_onlinejudge&Itemid=9&page=show_compilationerror&submission=$row[remote_id]",
+                    'site' => "https://onlinejudge.org/index.php?option=com_onlinejudge&Itemid=9&page=show_compilationerror&submission=$row[remote_id]",
                     'oj' => 'uva',
                     'handle' => $this->handle,
                 ]);

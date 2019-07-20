@@ -110,7 +110,7 @@ class Crawler extends CrawlerBase
 
         try {
             $pf = substr($con, 0, strlen($con) - 2);
-            $res = Requests::get("https://uva.onlinejudge.org/external/$pf/p$con.pdf");
+            $res = Requests::get("https://onlinejudge.org/external/$pf/p$con.pdf");
             if (!$res->success) {
                 $this->line("\n  <bg=red;fg=white> Exception </> : <fg=yellow>Problem's PDF not found.</>\n");
                 return;
@@ -125,7 +125,7 @@ class Crawler extends CrawlerBase
         $this->pro['OJ'] = $this->oid;
         $this->pro['contest_id'] = null;
         $this->pro['index_id'] = $info[0];
-        $this->pro['origin'] = "https://uva.onlinejudge.org/index.php?option=com_onlinejudge&Itemid=8&page=show_problem&problem=" . $info[0];
+        $this->pro['origin'] = "https://onlinejudge.org/index.php?option=com_onlinejudge&Itemid=8&page=show_problem&problem=" . $info[0];
         $this->pro['title'] = $info[1];
         $this->pro['time_limit'] = $info[3];
         $this->pro['memory_limit'] = 131072; // Given in elder codes

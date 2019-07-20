@@ -31,7 +31,7 @@ class Submitter extends Curl
     private function _login()
     {
         $response = $this->grab_page([
-            'site' => "https://uva.onlinejudge.org/",
+            'site' => "https://onlinejudge.org/",
             'oj' => 'uva',
             'handle' => $this->selectedJudger['handle'],
         ]);
@@ -46,7 +46,7 @@ class Submitter extends Curl
                 $post_data[$matches[1][$i]] = $matches[2][$i];
             }
             $this->post_data([
-                'site' => 'https://uva.onlinejudge.org/index.php?option=com_comprofiler&task=login',
+                'site' => 'https://onlinejudge.org/index.php?option=com_comprofiler&task=login',
                 'data' => $post_data,
                 'oj' => 'uva',
                 'ret' => false,
@@ -64,7 +64,7 @@ class Submitter extends Curl
         ];
 
         $response = $this->post_data([
-            'site' => "https://uva.onlinejudge.org/index.php?option=com_onlinejudge&Itemid=25&page=save_submission",
+            'site' => "https://onlinejudge.org/index.php?option=com_onlinejudge&Itemid=25&page=save_submission",
             'data' => $params,
             'oj' => 'uva',
             'ret' => true,
