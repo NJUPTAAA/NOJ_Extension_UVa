@@ -116,8 +116,7 @@ class Crawler extends CrawlerBase
                 return;
             }
             file_put_contents(base_path("public/external/gym/UVa$con.pdf"), $res->body);
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             $this->line("\n  <bg=red;fg=white> Exception </> : <fg=yellow>Failed while downloading PDF.</>\n");
             return;
         }
