@@ -58,7 +58,7 @@ class Submitter extends Curl
     private function _submit()
     {
         $params = [
-            'localid' => $this->post_data['iid'],
+            'problemid' => $this->post_data['iid'],
             'language' => $this->post_data['lang'],
             'code' => $this->post_data['solution'],
         ];
