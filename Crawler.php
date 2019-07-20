@@ -1,5 +1,5 @@
 <?php
-namespace App\Babel\Extension\uva;//The 'template' should be replaced by the real oj code.
+namespace App\Babel\Extension\uva;
 
 use App\Babel\Crawl\CrawlerBase;
 use App\Models\ProblemModel;
@@ -121,7 +121,7 @@ class Crawler extends CrawlerBase
             return;
         }
 
-        $this->pro['pcode'] = 'UVA' . $con;
+        $this->pro['pcode'] = 'UVa' . $con;
         $this->pro['OJ'] = $this->oid;
         $this->pro['contest_id'] = null;
         $this->pro['index_id'] = $info[0];
