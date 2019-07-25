@@ -7,6 +7,7 @@ use App\Models\JudgerModel;
 use App\Models\OJModel;
 use Illuminate\Support\Facades\Validator;
 use Requests;
+use Log;
 
 class Submitter extends Curl
 {
@@ -75,7 +76,9 @@ class Submitter extends Curl
         if (preg_match('/Submission\+received\+with\+ID\+(\d+)/', $response, $match)) {
             $this->sub['remote_id'] = $match[1];
         } else {
-            $this->sub['verdict'] = 'Submission Error';
+            sleep(1);
+            throw new \Exception("Submission error");
+            // $this->sub['verdict'] = 'Submission Error';
         }
     }
 
