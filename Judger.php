@@ -2,7 +2,7 @@
 namespace App\Babel\Extension\uva;
 
 use App\Babel\Submit\Curl;
-use App\Models\SubmissionModel;
+use App\Models\Submission\SubmissionModel;
 use App\Models\JudgerModel;
 use App\Models\OJModel;
 use Requests;
