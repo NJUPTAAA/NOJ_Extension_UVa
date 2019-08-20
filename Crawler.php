@@ -132,13 +132,14 @@ class Crawler extends CrawlerBase
         $this->pro['solved_count'] = $info[2];
         $this->pro['input_type'] = 'standard input';
         $this->pro['output_type'] = 'standard output';
-        $this->pro['description'] = "<a href=\"/external/gym/UVa{$con}.pdf\">[Attachment Link]</a>";
+        $this->pro['description'] = '';
         $this->pro['input'] = '';
         $this->pro['output'] = '';
         $this->pro['note'] = '';
         $this->pro['sample'] = [];
         $this->pro['source'] = 'Here';
         $this->pro['file'] = 1;
+        $this->pro['file_url'] = "/external/gym/UVa{$con}.pdf";
 
         $problem = $this->problemModel->pid($this->pro['pcode']);
 
