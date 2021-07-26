@@ -7,6 +7,7 @@ use App\Models\OJModel;
 use KubAT\PhpSimple\HtmlDomParser;
 use Requests;
 use Exception;
+use Storage;
 
 class Crawler extends CrawlerBase
 {
@@ -115,6 +116,7 @@ class Crawler extends CrawlerBase
                 $this->line("\n  <bg=red;fg=white> Exception </> : <fg=yellow>Problem's PDF not found.</>\n");
                 return;
             }
+            Storage::disk('NOJPublic')->makeDirectory("external/gym/");
             file_put_contents(base_path("public/external/gym/UVa$con.pdf"), $res->body);
         } catch (Exception $e) {
             $this->line("\n  <bg=red;fg=white> Exception </> : <fg=yellow>Failed while downloading PDF.</>\n");

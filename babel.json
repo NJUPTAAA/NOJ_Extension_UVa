@@ -6,7 +6,7 @@
     "description": "UVa interface for NOJ",
     "license": "MIT",
     "repository":"https://github.com/NJUPTAAA/NOJ_Extension_UVa",
-    "version":"0.1.4",
+    "version":"0.2.0",
     "website":"https://onlinejudge.org/",
     "provider":{
         "judger":"Judger",
@@ -15,6 +15,6 @@
         "installer":"Installer"
     },
     "require":{
-        "NOJ":"0.3.2"
+        "NOJ":"^0.3.2"
     }
 }
